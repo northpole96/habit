@@ -14,6 +14,10 @@ export default function HabitTracker() {
     toggleHabitCompletion,
     updateHabitEntry,
     getHabitStreak,
+    getLongestStreak,
+    getHabitAverage,
+    getHabitTotal,
+    getHabitStandardDeviation,
     isHabitCompletedToday,
     getTodayEntry,
     getTotalCount,
@@ -115,13 +119,17 @@ export default function HabitTracker() {
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-6 max-w-4xl mx-auto">
             {habits.map((habit) => (
               <HabitCard
                 key={habit.id}
                 habit={habit}
                 isCompletedToday={isHabitCompletedToday(habit)}
                 currentStreak={getHabitStreak(habit)}
+                longestStreak={getLongestStreak(habit)}
+                average={getHabitAverage(habit)}
+                total={getHabitTotal(habit)}
+                standardDeviation={getHabitStandardDeviation(habit)}
                 todayValue={getTodayEntry(habit)}
                 totalCount={getTotalCount(habit)}
                 onToggleCompletion={toggleHabitCompletion}

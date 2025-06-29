@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, Flame, Trash2, Calendar, Target, Hash, CheckSquare } from 'lucide-react';
+import { Check, Flame, Trash2, Target, Hash, CheckSquare, TrendingUp, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,10 @@ interface HabitCardProps {
   habit: Habit;
   isCompletedToday: boolean;
   currentStreak: number;
+  longestStreak: number;
+  average: number;
+  total: number;
+  standardDeviation: number;
   todayValue: number;
   totalCount: number;
   onToggleCompletion: (habitId: string, date: string) => void;
@@ -24,13 +28,16 @@ export const HabitCard = ({
   habit,
   isCompletedToday,
   currentStreak,
+  longestStreak,
+  average,
+  total,
+  standardDeviation,
   todayValue,
   totalCount,
   onToggleCompletion,
   onUpdateEntry,
   onDelete,
 }: HabitCardProps) => {
-  const [showGraph, setShowGraph] = useState(false);
   const [inputValue, setInputValue] = useState(todayValue.toString());
   
   // Update input value when todayValue changes
@@ -113,24 +120,7 @@ export const HabitCard = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Stats */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-sm font-medium">{currentStreak} day streak</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Target className="h-4 w-4 text-blue-500" />
-              <span className="text-sm text-muted-foreground">{totalCount} total</span>
-            </div>
-          </div>
-          <Badge variant={completionRate >= 70 ? 'default' : 'secondary'}>
-            {completionRate}% rate
-          </Badge>
-        </div>
-
+      <CardContent className="space-y-6">
         {/* Today's progress */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -191,33 +181,90 @@ export const HabitCard = ({
           )}
         </div>
 
-        {/* Graph toggle */}
-        <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowGraph(!showGraph)}
-            className="gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <Calendar className="h-4 w-4" />
-            {showGraph ? 'Hide' : 'Show'} Activity
-          </Button>
+        {/* Activity graph - always shown */}
+        <div className="space-y-3">
+          <div className="text-sm font-medium">
+            {new Date().getFullYear()} Activity
+            {habit.type === 'number' && (
+              <span className="text-xs text-muted-foreground ml-2">
+                (Darker = higher values)
+              </span>
+            )}
+          </div>
+          <HabitGraph habit={habit} />
         </div>
 
-        {/* Activity graph */}
-        {showGraph && (
-          <div className="border-t pt-4">
-            <div className="text-sm font-medium mb-2">
-              {new Date().getFullYear()} Activity
+        {/* Insights section */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Insights</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Longest streak:</span>
+                <span className="font-medium">{longestStreak} days</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Current streak:</span>
+                <span className="font-medium">{currentStreak} days</span>
+              </div>
               {habit.type === 'number' && (
-                <span className="text-xs text-muted-foreground ml-2">
-                  (Darker = higher values)
-                </span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Number of entries:</span>
+                  <span className="font-medium">{totalCount}</span>
+                </div>
               )}
             </div>
-            <HabitGraph habit={habit} />
+            
+            <div className="space-y-2">
+              {habit.type === 'number' ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Average:</span>
+                    <span className="font-medium">
+                      {average.toFixed(2)} {habit.unit || ''}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Standard deviation:</span>
+                    <span className="font-medium">
+                      {standardDeviation.toFixed(2)} {habit.unit || ''}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total:</span>
+                    <span className="font-medium">
+                      {total.toFixed(2)} {habit.unit || ''}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Average:</span>
+                  <span className="font-medium">{(average * 100).toFixed(0)}%</span>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Quick stats badges */}
+        <div className="flex items-center gap-2 pt-2 border-t">
+          <div className="flex items-center gap-1">
+            <Flame className="h-4 w-4 text-orange-500" />
+            <span className="text-sm font-medium">{currentStreak} day streak</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Target className="h-4 w-4 text-blue-500" />
+            <span className="text-sm text-muted-foreground">{totalCount} total</span>
+          </div>
+          <Badge variant={completionRate >= 70 ? 'default' : 'secondary'}>
+            {completionRate}% rate
+          </Badge>
+        </div>
       </CardContent>
     </Card>
   );

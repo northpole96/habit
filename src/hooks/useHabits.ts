@@ -199,6 +199,94 @@ export const useHabits = () => {
     }
   };
 
+  const getLongestStreak = (habit: Habit): number => {
+    if (habit.type === 'checkbox') {
+      if (habit.completedDates.length === 0) return 0;
+      
+      const sortedDates = habit.completedDates
+        .map(date => new Date(date))
+        .sort((a, b) => a.getTime() - b.getTime());
+      
+      let longestStreak = 1;
+      let currentStreak = 1;
+      
+      for (let i = 1; i < sortedDates.length; i++) {
+        const prevDate = sortedDates[i - 1];
+        const currentDate = sortedDates[i];
+        const daysDiff = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff === 1) {
+          currentStreak++;
+          longestStreak = Math.max(longestStreak, currentStreak);
+        } else {
+          currentStreak = 1;
+        }
+      }
+      
+      return longestStreak;
+    } else {
+      if (!habit.entries || habit.entries.length === 0) return 0;
+      
+      const successfulDates = habit.entries
+        .filter(entry => entry.value >= (habit.target || 1))
+        .map(entry => new Date(entry.date))
+        .sort((a, b) => a.getTime() - b.getTime());
+      
+      if (successfulDates.length === 0) return 0;
+      
+      let longestStreak = 1;
+      let currentStreak = 1;
+      
+      for (let i = 1; i < successfulDates.length; i++) {
+        const prevDate = successfulDates[i - 1];
+        const currentDate = successfulDates[i];
+        const daysDiff = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff === 1) {
+          currentStreak++;
+          longestStreak = Math.max(longestStreak, currentStreak);
+        } else {
+          currentStreak = 1;
+        }
+      }
+      
+      return longestStreak;
+    }
+  };
+
+  const getHabitAverage = (habit: Habit): number => {
+    if (habit.type === 'checkbox') {
+      const totalDays = Math.max(1, Math.ceil((new Date().getTime() - new Date(habit.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
+      return habit.completedDates.length / totalDays;
+    } else {
+      if (!habit.entries || habit.entries.length === 0) return 0;
+      const total = habit.entries.reduce((sum, entry) => sum + entry.value, 0);
+      return total / habit.entries.length;
+    }
+  };
+
+  const getHabitTotal = (habit: Habit): number => {
+    if (habit.type === 'checkbox') {
+      return habit.completedDates.length;
+    } else {
+      if (!habit.entries || habit.entries.length === 0) return 0;
+      return habit.entries.reduce((sum, entry) => sum + entry.value, 0);
+    }
+  };
+
+  const getHabitStandardDeviation = (habit: Habit): number => {
+    if (habit.type === 'checkbox') return 0;
+    
+    if (!habit.entries || habit.entries.length < 2) return 0;
+    
+    const average = getHabitAverage(habit);
+    const variance = habit.entries.reduce((sum, entry) => {
+      return sum + Math.pow(entry.value - average, 2);
+    }, 0) / habit.entries.length;
+    
+    return Math.sqrt(variance);
+  };
+
   const isHabitCompletedToday = (habit: Habit): boolean => {
     const today = new Date().toISOString().split('T')[0];
     
@@ -233,6 +321,10 @@ export const useHabits = () => {
     toggleHabitCompletion,
     updateHabitEntry,
     getHabitStreak,
+    getLongestStreak,
+    getHabitAverage,
+    getHabitTotal,
+    getHabitStandardDeviation,
     isHabitCompletedToday,
     getTodayEntry,
     getTotalCount,
