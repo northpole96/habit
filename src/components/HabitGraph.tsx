@@ -15,9 +15,6 @@ export const HabitGraph = ({ habit, className }: HabitGraphProps) => {
     const yearStart = startOfYear(new Date(currentYear, 0, 1));
     const yearEnd = endOfYear(new Date(currentYear, 0, 1));
     
-    // Get all days in the current year
-    const allDays = eachDayOfInterval({ start: yearStart, end: yearEnd });
-    
     // Start from the first day of the week containing January 1st
     const graphStart = startOfWeek(yearStart);
     const totalWeeks = Math.ceil((yearEnd.getTime() - graphStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
@@ -30,29 +27,68 @@ export const HabitGraph = ({ habit, className }: HabitGraphProps) => {
         const currentDate = new Date(graphStart);
         currentDate.setDate(graphStart.getDate() + week * 7 + day);
         
-        const isCompleted = habit.completedDates.some(completedDate => 
-          isSameDay(new Date(completedDate), currentDate)
-        );
-        
+        const dateString = format(currentDate, 'yyyy-MM-dd');
         const isCurrentYear = currentDate.getFullYear() === currentYear;
+        
+        let value = 0;
+        let isCompleted = false;
+        
+        if (habit.type === 'checkbox') {
+          isCompleted = habit.completedDates.some(completedDate => 
+            isSameDay(new Date(completedDate), currentDate)
+          );
+        } else {
+          const entry = habit.entries?.find(entry => entry.date === dateString);
+          value = entry?.value || 0;
+          isCompleted = value >= (habit.target || 1);
+        }
         
         weekDays.push({
           date: currentDate,
+          dateString,
           isCompleted,
+          value,
           isCurrentYear,
-          dateString: format(currentDate, 'yyyy-MM-dd'),
         });
       }
       weeks.push(weekDays);
     }
     
     return weeks;
-  }, [habit.completedDates]);
+  }, [habit.completedDates, habit.entries, habit.target, habit.type]);
 
-  const getIntensityClass = (isCompleted: boolean, isCurrentYear: boolean) => {
+  const getIntensityClass = (isCompleted: boolean, value: number, isCurrentYear: boolean) => {
     if (!isCurrentYear) return 'bg-gray-100 dark:bg-gray-800';
-    if (isCompleted) return 'bg-green-500 dark:bg-green-400';
-    return 'bg-gray-200 dark:bg-gray-700';
+    
+    if (habit.type === 'checkbox') {
+      if (isCompleted) return 'bg-green-500 dark:bg-green-400';
+      return 'bg-gray-200 dark:bg-gray-700';
+    } else {
+      // For number habits, calculate intensity based on value relative to target
+      const target = habit.target || 1;
+      if (value === 0) return 'bg-gray-200 dark:bg-gray-700';
+      
+      const intensity = Math.min(value / target, 2); // Cap at 2x target for max intensity
+      
+      if (intensity >= 2) return 'bg-green-600 dark:bg-green-300';
+      if (intensity >= 1.5) return 'bg-green-500 dark:bg-green-400';
+      if (intensity >= 1) return 'bg-green-400 dark:bg-green-500';
+      if (intensity >= 0.5) return 'bg-green-300 dark:bg-green-600';
+      return 'bg-green-200 dark:bg-green-700';
+    }
+  };
+
+  const getTooltipText = (day: any) => {
+    const dateStr = format(day.date, 'MMM d, yyyy');
+    
+    if (habit.type === 'checkbox') {
+      return `${dateStr} - ${day.isCompleted ? 'Completed' : 'Not completed'}`;
+    } else {
+      const unit = habit.unit ? ` ${habit.unit}` : '';
+      const target = habit.target || 1;
+      const progress = day.value > 0 ? ` (${((day.value / target) * 100).toFixed(0)}% of target)` : '';
+      return `${dateStr} - ${day.value}${unit}${progress}`;
+    }
   };
 
   const monthLabels = useMemo(() => {
@@ -106,11 +142,10 @@ export const HabitGraph = ({ habit, className }: HabitGraphProps) => {
                       key={`${weekIndex}-${dayIndex}`}
                       className={`w-3 h-3 rounded-sm transition-colors ${getIntensityClass(
                         day.isCompleted,
+                        day.value,
                         day.isCurrentYear
                       )}`}
-                      title={`${format(day.date, 'MMM d, yyyy')} - ${
-                        day.isCompleted ? 'Completed' : 'Not completed'
-                      }`}
+                      title={getTooltipText(day)}
                     />
                   ))}
                 </div>
@@ -123,13 +158,21 @@ export const HabitGraph = ({ habit, className }: HabitGraphProps) => {
             <span>Less</span>
             <div className="flex gap-1">
               <div className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700"></div>
-              <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-800"></div>
+              <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-700"></div>
               <div className="w-3 h-3 rounded-sm bg-green-300 dark:bg-green-600"></div>
               <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-500"></div>
               <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-400"></div>
+              <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-300"></div>
             </div>
             <span>More</span>
           </div>
+          
+          {/* Additional info for number habits */}
+          {habit.type === 'number' && (
+            <div className="mt-2 text-xs text-muted-foreground text-center">
+              Target: {habit.target}{habit.unit ? ` ${habit.unit}` : ''} per day
+            </div>
+          )}
         </div>
       </div>
     </div>

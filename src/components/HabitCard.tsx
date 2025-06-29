@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, Flame, Trash2, Calendar, Target } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Flame, Trash2, Calendar, Target, Hash, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Habit } from '@/types/habit';
 import { HabitGraph } from './HabitGraph';
 
@@ -12,7 +13,10 @@ interface HabitCardProps {
   habit: Habit;
   isCompletedToday: boolean;
   currentStreak: number;
+  todayValue: number;
+  totalCount: number;
   onToggleCompletion: (habitId: string, date: string) => void;
+  onUpdateEntry: (habitId: string, date: string, value: number) => void;
   onDelete: (habitId: string) => void;
 }
 
@@ -20,21 +24,53 @@ export const HabitCard = ({
   habit,
   isCompletedToday,
   currentStreak,
+  todayValue,
+  totalCount,
   onToggleCompletion,
+  onUpdateEntry,
   onDelete,
 }: HabitCardProps) => {
   const [showGraph, setShowGraph] = useState(false);
+  const [inputValue, setInputValue] = useState(todayValue.toString());
+  
+  // Update input value when todayValue changes
+  useEffect(() => {
+    setInputValue(todayValue.toString());
+  }, [todayValue]);
   
   const today = new Date().toISOString().split('T')[0];
   
   const handleToggleCompletion = () => {
-    onToggleCompletion(habit.id, today);
+    if (habit.type === 'checkbox') {
+      onToggleCompletion(habit.id, today);
+    }
   };
 
-  const totalCompletions = habit.completedDates.length;
-  const completionRate = totalCompletions > 0 
-    ? Math.round((totalCompletions / Math.max(1, Math.ceil((new Date().getTime() - new Date(habit.createdAt).getTime()) / (1000 * 60 * 60 * 24)))) * 100)
+  const handleNumberSubmit = () => {
+    const value = parseFloat(inputValue) || 0;
+    onUpdateEntry(habit.id, today, value);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleNumberSubmit();
+    }
+  };
+
+  const completionRate = totalCount > 0 
+    ? Math.round((totalCount / Math.max(1, Math.ceil((new Date().getTime() - new Date(habit.createdAt).getTime()) / (1000 * 60 * 60 * 24)))) * 100)
     : 0;
+
+  const getProgressPercentage = () => {
+    if (habit.type === 'number' && habit.target) {
+      return Math.min((todayValue / habit.target) * 100, 100);
+    }
+    return isCompletedToday ? 100 : 0;
+  };
 
   return (
     <Card className="relative overflow-hidden">
@@ -47,11 +83,23 @@ export const HabitCard = ({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg font-semibold truncate">{habit.name}</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg font-semibold truncate">{habit.name}</CardTitle>
+              {habit.type === 'checkbox' ? (
+                <CheckSquare className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Hash className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
             {habit.description && (
               <CardDescription className="mt-1 text-sm">
                 {habit.description}
               </CardDescription>
+            )}
+            {habit.type === 'number' && (
+              <div className="text-xs text-muted-foreground mt-1">
+                Target: {habit.target}{habit.unit ? ` ${habit.unit}` : ''} per day
+              </div>
             )}
           </div>
           <Button
@@ -75,7 +123,7 @@ export const HabitCard = ({
             </div>
             <div className="flex items-center gap-1">
               <Target className="h-4 w-4 text-blue-500" />
-              <span className="text-sm text-muted-foreground">{totalCompletions} total</span>
+              <span className="text-sm text-muted-foreground">{totalCount} total</span>
             </div>
           </div>
           <Badge variant={completionRate >= 70 ? 'default' : 'secondary'}>
@@ -83,22 +131,64 @@ export const HabitCard = ({
           </Badge>
         </div>
 
-        {/* Today's completion */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Today</span>
-          <Button
-            onClick={handleToggleCompletion}
-            variant={isCompletedToday ? 'default' : 'outline'}
-            size="sm"
-            className={`gap-2 ${
-              isCompletedToday 
-                ? 'bg-green-500 hover:bg-green-600 text-white' 
-                : 'hover:bg-green-50 dark:hover:bg-green-950'
-            }`}
-          >
-            <Check className="h-4 w-4" />
-            {isCompletedToday ? 'Completed' : 'Mark Done'}
-          </Button>
+        {/* Today's progress */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Today</span>
+            {habit.type === 'checkbox' ? (
+              <Button
+                onClick={handleToggleCompletion}
+                variant={isCompletedToday ? 'default' : 'outline'}
+                size="sm"
+                className={`gap-2 ${
+                  isCompletedToday 
+                    ? 'bg-green-500 hover:bg-green-600 text-white' 
+                    : 'hover:bg-green-50 dark:hover:bg-green-950'
+                }`}
+              >
+                <Check className="h-4 w-4" />
+                {isCompletedToday ? 'Completed' : 'Mark Done'}
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  onKeyPress={handleInputKeyPress}
+                  onBlur={handleNumberSubmit}
+                  className="w-20 h-8 text-center"
+                  placeholder="0"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {habit.unit || 'units'}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          {/* Progress bar for number habits */}
+          {habit.type === 'number' && habit.target && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{todayValue}{habit.unit ? ` ${habit.unit}` : ''}</span>
+                <span>Target: {habit.target}{habit.unit ? ` ${habit.unit}` : ''}</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    isCompletedToday ? 'bg-green-500' : 'bg-blue-500'
+                  }`}
+                  style={{ width: `${getProgressPercentage()}%` }}
+                />
+              </div>
+              <div className="text-xs text-center text-muted-foreground">
+                {getProgressPercentage().toFixed(0)}% of target
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Graph toggle */}
@@ -119,6 +209,11 @@ export const HabitCard = ({
           <div className="border-t pt-4">
             <div className="text-sm font-medium mb-2">
               {new Date().getFullYear()} Activity
+              {habit.type === 'number' && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  (Darker = higher values)
+                </span>
+              )}
             </div>
             <HabitGraph habit={habit} />
           </div>

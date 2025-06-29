@@ -12,8 +12,11 @@ export default function HabitTracker() {
     addHabit,
     deleteHabit,
     toggleHabitCompletion,
+    updateHabitEntry,
     getHabitStreak,
     isHabitCompletedToday,
+    getTodayEntry,
+    getTotalCount,
   } = useHabits();
 
   if (isLoading) {
@@ -99,6 +102,13 @@ export default function HabitTracker() {
                 <h2 className="text-2xl font-semibold mb-2">No habits yet</h2>
                 <p className="text-muted-foreground mb-6">
                   Start building better habits today. Create your first habit to begin tracking your progress.
+                  <br />
+                  <br />
+                  Choose between:
+                  <br />
+                  <strong>Checkbox habits</strong> - Simple complete/incomplete tracking
+                  <br />
+                  <strong>Number habits</strong> - Track quantities like miles, minutes, glasses, etc.
                 </p>
               </div>
               <CreateHabitDialog onCreateHabit={addHabit} />
@@ -112,7 +122,10 @@ export default function HabitTracker() {
                 habit={habit}
                 isCompletedToday={isHabitCompletedToday(habit)}
                 currentStreak={getHabitStreak(habit)}
+                todayValue={getTodayEntry(habit)}
+                totalCount={getTotalCount(habit)}
                 onToggleCompletion={toggleHabitCompletion}
+                onUpdateEntry={updateHabitEntry}
                 onDelete={deleteHabit}
               />
             ))}

@@ -21,7 +21,14 @@ export const useHabits = () => {
       try {
         const savedHabits = localStorage.getItem(HABITS_STORAGE_KEY);
         if (savedHabits) {
-          setHabits(JSON.parse(savedHabits));
+          const parsedHabits = JSON.parse(savedHabits);
+          // Migrate old habits to new format
+          const migratedHabits = parsedHabits.map((habit: any) => ({
+            ...habit,
+            type: habit.type || 'checkbox', // Default to checkbox for existing habits
+            entries: habit.entries || [],
+          }));
+          setHabits(migratedHabits);
         }
       } catch (error) {
         console.error('Error loading habits:', error);
@@ -46,14 +53,25 @@ export const useHabits = () => {
     }
   };
 
-  const addHabit = (name: string, description?: string, color: string = '#10b981') => {
+  const addHabit = (
+    name: string, 
+    description?: string, 
+    color: string = '#10b981',
+    type: 'checkbox' | 'number' = 'checkbox',
+    target?: number,
+    unit?: string
+  ) => {
     const newHabit: Habit = {
       id: Date.now().toString(),
       name,
       description,
       color,
+      type,
+      target,
+      unit,
       createdAt: new Date().toISOString(),
       completedDates: [],
+      entries: [],
     };
     
     const updatedHabits = [...habits, newHabit];
@@ -67,7 +85,7 @@ export const useHabits = () => {
 
   const toggleHabitCompletion = (habitId: string, date: string) => {
     const updatedHabits = habits.map(habit => {
-      if (habit.id === habitId) {
+      if (habit.id === habitId && habit.type === 'checkbox') {
         const completedDates = [...habit.completedDates];
         const dateIndex = completedDates.indexOf(date);
         
@@ -85,45 +103,126 @@ export const useHabits = () => {
     saveHabits(updatedHabits);
   };
 
-  const getHabitStreak = (habit: Habit): number => {
-    if (habit.completedDates.length === 0) return 0;
-    
-    const sortedDates = habit.completedDates
-      .map(date => new Date(date))
-      .sort((a, b) => b.getTime() - a.getTime());
-    
-    let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Check if completed today or yesterday (to account for different time zones)
-    const mostRecentDate = sortedDates[0];
-    mostRecentDate.setHours(0, 0, 0, 0);
-    
-    const daysDiff = Math.floor((today.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff > 1) return 0; // Streak broken
-    
-    // Count consecutive days
-    for (let i = 0; i < sortedDates.length; i++) {
-      const currentDate = sortedDates[i];
-      const expectedDate = new Date(today);
-      expectedDate.setDate(today.getDate() - (daysDiff + i));
-      expectedDate.setHours(0, 0, 0, 0);
-      
-      if (currentDate.getTime() === expectedDate.getTime()) {
-        streak++;
-      } else {
-        break;
+  const updateHabitEntry = (habitId: string, date: string, value: number) => {
+    const updatedHabits = habits.map(habit => {
+      if (habit.id === habitId && habit.type === 'number') {
+        const entries = [...(habit.entries || [])];
+        const existingEntryIndex = entries.findIndex(entry => entry.date === date);
+        
+        if (existingEntryIndex > -1) {
+          if (value > 0) {
+            entries[existingEntryIndex] = { date, value };
+          } else {
+            entries.splice(existingEntryIndex, 1);
+          }
+        } else if (value > 0) {
+          entries.push({ date, value });
+        }
+        
+        return { ...habit, entries };
       }
-    }
+      return habit;
+    });
     
-    return streak;
+    saveHabits(updatedHabits);
+  };
+
+  const getHabitStreak = (habit: Habit): number => {
+    if (habit.type === 'checkbox') {
+      if (habit.completedDates.length === 0) return 0;
+      
+      const sortedDates = habit.completedDates
+        .map(date => new Date(date))
+        .sort((a, b) => b.getTime() - a.getTime());
+      
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const mostRecentDate = sortedDates[0];
+      mostRecentDate.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.floor((today.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff > 1) return 0;
+      
+      for (let i = 0; i < sortedDates.length; i++) {
+        const currentDate = sortedDates[i];
+        const expectedDate = new Date(today);
+        expectedDate.setDate(today.getDate() - (daysDiff + i));
+        expectedDate.setHours(0, 0, 0, 0);
+        
+        if (currentDate.getTime() === expectedDate.getTime()) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      
+      return streak;
+    } else {
+      // For number habits, count consecutive days with entries that meet the target
+      if (!habit.entries || habit.entries.length === 0) return 0;
+      
+      const sortedEntries = habit.entries
+        .filter(entry => entry.value >= (habit.target || 1))
+        .map(entry => new Date(entry.date))
+        .sort((a, b) => b.getTime() - a.getTime());
+      
+      if (sortedEntries.length === 0) return 0;
+      
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const mostRecentDate = sortedEntries[0];
+      mostRecentDate.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.floor((today.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff > 1) return 0;
+      
+      for (let i = 0; i < sortedEntries.length; i++) {
+        const currentDate = sortedEntries[i];
+        const expectedDate = new Date(today);
+        expectedDate.setDate(today.getDate() - (daysDiff + i));
+        expectedDate.setHours(0, 0, 0, 0);
+        
+        if (currentDate.getTime() === expectedDate.getTime()) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      
+      return streak;
+    }
   };
 
   const isHabitCompletedToday = (habit: Habit): boolean => {
     const today = new Date().toISOString().split('T')[0];
-    return habit.completedDates.includes(today);
+    
+    if (habit.type === 'checkbox') {
+      return habit.completedDates.includes(today);
+    } else {
+      const todayEntry = habit.entries?.find(entry => entry.date === today);
+      return todayEntry ? todayEntry.value >= (habit.target || 1) : false;
+    }
+  };
+
+  const getTodayEntry = (habit: Habit): number => {
+    if (habit.type !== 'number') return 0;
+    const today = new Date().toISOString().split('T')[0];
+    const todayEntry = habit.entries?.find(entry => entry.date === today);
+    return todayEntry?.value || 0;
+  };
+
+  const getTotalCount = (habit: Habit): number => {
+    if (habit.type === 'checkbox') {
+      return habit.completedDates.length;
+    } else {
+      return habit.entries?.length || 0;
+    }
   };
 
   return {
@@ -132,7 +231,10 @@ export const useHabits = () => {
     addHabit,
     deleteHabit,
     toggleHabitCompletion,
+    updateHabitEntry,
     getHabitStreak,
     isHabitCompletedToday,
+    getTodayEntry,
+    getTotalCount,
   };
 }; 
