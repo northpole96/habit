@@ -13,42 +13,68 @@ interface HabitGraphProps {
 export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) => {
   const graphData = useMemo(() => {
     const today = new Date();
-    const endOfGraph = startOfWeek(today, { weekStartsOn: 0 }); // Start week on Sunday
-    const startOfGraph = subWeeks(endOfGraph, 51); // 52 weeks total (0-51)
     
-    // Create a grid of weeks and days
+    // Calculate exactly 364 days ago from today
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 363); // 364 days total (today + 363 previous days)
+    
+    // Create all 364 days first
+    const allDays = [];
+    for (let i = 0; i < 364; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      
+      const dateString = format(currentDate, 'yyyy-MM-dd');
+      const isWithinRange = currentDate <= today;
+      
+      let value = 0;
+      let isCompleted = false;
+      
+      if (habit.type === 'checkbox') {
+        isCompleted = habit.completedDates.some(completedDate => 
+          isSameDay(new Date(completedDate), currentDate)
+        );
+      } else {
+        const entry = habit.entries?.find(entry => entry.date === dateString);
+        value = entry?.value || 0;
+        isCompleted = value >= (habit.target || 1);
+      }
+      
+      allDays.push({
+        date: currentDate,
+        dateString,
+        isCompleted,
+        value,
+        isWithinRange,
+        dayOfWeek: currentDate.getDay(), // 0 = Sunday, 6 = Saturday
+      });
+    }
+    
+    // Arrange in grid: 52 weeks (columns) × 7 days (rows)
+    // Today should be in bottom-right, so we need to align the grid properly
     const weeks = [];
+    
+    // Find what day of week today is to determine the alignment
+    const todayDayOfWeek = today.getDay();  // 0 = Sunday, 6 = Saturday
+    
+    // Calculate how many empty cells we need at the beginning to align today at bottom-right
+    const totalCells = 52 * 7; // 364 cells
+    const emptyCellsAtStart = totalCells - 364;
+    
+    // Create the grid week by week
     for (let week = 0; week < 52; week++) {
       const weekDays = [];
-      const weekStart = addWeeks(startOfGraph, week);
       
       for (let day = 0; day < 7; day++) {
-        const currentDate = new Date(weekStart);
-        currentDate.setDate(weekStart.getDate() + day);
+        const cellIndex = week * 7 + day;
+        const dayIndex = cellIndex - emptyCellsAtStart;
         
-        const dateString = format(currentDate, 'yyyy-MM-dd');
-        const isWithinRange = currentDate <= today;
-        
-        let value = 0;
-        let isCompleted = false;
-        
-        if (habit.type === 'checkbox') {
-          isCompleted = habit.completedDates.some(completedDate => 
-            isSameDay(new Date(completedDate), currentDate)
-          );
+        if (dayIndex >= 0 && dayIndex < 364) {
+          weekDays.push(allDays[dayIndex]);
         } else {
-          const entry = habit.entries?.find(entry => entry.date === dateString);
-          value = entry?.value || 0;
-          isCompleted = value >= (habit.target || 1);
+          // Empty cell for alignment
+          weekDays.push(null);
         }
-        
-        weekDays.push({
-          date: currentDate,
-          dateString,
-          isCompleted,
-          value,
-          isWithinRange,
-        });
       }
       weeks.push(weekDays);
     }
@@ -99,19 +125,21 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
   const monthLabels = useMemo(() => {
     if (graphData.length === 0) return [];
     
-    const months = [];
+    const months: Array<{ name: string; weekIndex: number; year: number }> = [];
     let currentMonth = -1;
     
     graphData.forEach((week, weekIndex) => {
-      const firstDayOfWeek = week[0].date;
-      const month = firstDayOfWeek.getMonth();
+      const firstValidDay = week.find(day => day !== null);
+      if (!firstValidDay) return;
+      
+      const month = firstValidDay.date.getMonth();
       
       if (month !== currentMonth) {
         currentMonth = month;
         months.push({
-          name: format(firstDayOfWeek, 'MMM'),
+          name: format(firstValidDay.date, 'MMM'),
           weekIndex,
-          year: firstDayOfWeek.getFullYear(),
+          year: firstValidDay.date.getFullYear(),
         });
       }
     });
@@ -121,41 +149,51 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
 
   return (
     <div className={`p-4 ${className}`}>
-      <div className="overflow-x-auto">
-        <div className="inline-block min-w-full">
-          {/* Month labels */}
-          <div className="flex mb-2 text-xs text-gray-600 dark:text-gray-400 relative">
-            {monthLabels.map((month, index) => (
-              <div
-                key={`${month.name}-${month.year}-${index}`}
-                className="absolute"
-                style={{ left: `${month.weekIndex * 16 + 40}px` }}
-              >
-                {month.name}
-              </div>
-            ))}
+      <div className="w-full">
+        {/* Month labels */}
+        <div className="flex mb-2 text-xs text-gray-600 dark:text-gray-400 relative" style={{ marginLeft: '2.5rem' }}>
+          {monthLabels.map((month, index) => (
+            <div
+              key={`${month.name}-${month.year}-${index}`}
+              className="absolute"
+              style={{ left: `${month.weekIndex * (100 / 52)}%` }}
+            >
+              {month.name}
+            </div>
+          ))}
+        </div>
+        
+        {/* Day labels */}
+        <div className="flex">
+          <div className="flex flex-col text-xs text-gray-600 dark:text-gray-400 mr-2 w-10">
+            <div className="h-3"></div>
+            <div className="h-3 flex items-center">Mon</div>
+            <div className="h-3"></div>
+            <div className="h-3 flex items-center">Wed</div>
+            <div className="h-3"></div>
+            <div className="h-3 flex items-center">Fri</div>
+            <div className="h-3"></div>
           </div>
           
-          {/* Day labels */}
-          <div className="flex">
-            <div className="flex flex-col text-xs text-gray-600 dark:text-gray-400 mr-2">
-              <div className="h-3"></div>
-              <div className="h-3 flex items-center">Mon</div>
-              <div className="h-3"></div>
-              <div className="h-3 flex items-center">Wed</div>
-              <div className="h-3"></div>
-              <div className="h-3 flex items-center">Fri</div>
-              <div className="h-3"></div>
-            </div>
-            
-            {/* Graph grid */}
-            <div className="flex gap-1">
-              {graphData.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-1">
-                  {week.map((day, dayIndex) => (
+          {/* Graph grid */}
+          <div className="flex-1 flex gap-1">
+            {graphData.map((week, weekIndex) => (
+              <div key={weekIndex} className="flex flex-col gap-1 flex-1">
+                {week.map((day, dayIndex) => {
+                  if (!day) {
+                    // Empty cell for alignment
+                    return (
+                      <div
+                        key={`${weekIndex}-${dayIndex}`}
+                        className="w-full aspect-square rounded-sm bg-transparent"
+                      />
+                    );
+                  }
+                  
+                  return (
                     <div
                       key={`${weekIndex}-${dayIndex}`}
-                      className={`w-3 h-3 rounded-sm transition-all ${getIntensityClass(
+                      className={`w-full aspect-square rounded-sm transition-all ${getIntensityClass(
                         day.isCompleted,
                         day.value,
                         day.isWithinRange
@@ -167,41 +205,41 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
                       title={getTooltipText(day)}
                       onClick={() => handleCellClick(day)}
                     />
-                  ))}
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
-          
-          {/* Legend */}
-          <div className="flex items-center justify-between mt-4 text-xs text-gray-600 dark:text-gray-400">
-            <span>Less</span>
-            <div className="flex gap-1">
-              <div className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700"></div>
-              <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-700"></div>
-              <div className="w-3 h-3 rounded-sm bg-green-300 dark:bg-green-600"></div>
-              <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-500"></div>
-              <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-400"></div>
-              <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-300"></div>
-            </div>
-            <span>More</span>
-          </div>
-          
-          {/* Additional info for number habits */}
-          {habit.type === 'number' && (
-            <div className="mt-2 text-xs text-muted-foreground text-center">
-              Target: {habit.target}{habit.unit ? ` ${habit.unit}` : ''} per day
-              {onCellClick && <div className="mt-1">Click on any day to edit</div>}
-            </div>
-          )}
-          
-          {/* Click instruction for checkbox habits */}
-          {habit.type === 'checkbox' && onCellClick && (
-            <div className="mt-2 text-xs text-muted-foreground text-center">
-              Click on any day to mark complete/incomplete
-            </div>
-          )}
         </div>
+        
+        {/* Legend */}
+        <div className="flex items-center justify-between mt-4 text-xs text-gray-600 dark:text-gray-400">
+          <span>Less</span>
+          <div className="flex gap-1">
+            <div className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700"></div>
+            <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-700"></div>
+            <div className="w-3 h-3 rounded-sm bg-green-300 dark:bg-green-600"></div>
+            <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-500"></div>
+            <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-400"></div>
+            <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-300"></div>
+          </div>
+          <span>More</span>
+        </div>
+        
+        {/* Additional info for number habits */}
+        {habit.type === 'number' && (
+          <div className="mt-2 text-xs text-muted-foreground text-center">
+            Target: {habit.target}{habit.unit ? ` ${habit.unit}` : ''} per day
+            {onCellClick && <div className="mt-1">Click on any day to edit</div>}
+          </div>
+        )}
+        
+        {/* Click instruction for checkbox habits */}
+        {habit.type === 'checkbox' && onCellClick && (
+          <div className="mt-2 text-xs text-muted-foreground text-center">
+            Click on any day to mark complete/incomplete
+          </div>
+        )}
       </div>
     </div>
   );
