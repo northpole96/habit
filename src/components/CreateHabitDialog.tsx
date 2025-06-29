@@ -1,0 +1,122 @@
+'use client';
+
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
+interface CreateHabitDialogProps {
+  onCreateHabit: (name: string, description?: string, color?: string) => void;
+}
+
+const HABIT_COLORS = [
+  '#10b981', // emerald
+  '#0ea5e9', // sky
+  '#8b5cf6', // violet
+  '#ef4444', // red
+  '#f59e0b', // amber
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#84cc16', // lime
+];
+
+export const CreateHabitDialog = ({ onCreateHabit }: CreateHabitDialogProps) => {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedColor, setSelectedColor] = useState(HABIT_COLORS[0]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    onCreateHabit(name.trim(), description.trim() || undefined, selectedColor);
+    
+    // Reset form
+    setName('');
+    setDescription('');
+    setSelectedColor(HABIT_COLORS[0]);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="gap-2">
+          <Plus className="h-4 w-4" />
+          Add Habit
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Create New Habit</DialogTitle>
+            <DialogDescription>
+              Add a new habit to track. Choose a name, optional description, and color.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Habit Name *</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Morning Exercise, Read for 30 minutes..."
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description (optional)</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe your habit or add some motivation..."
+                rows={3}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Color</Label>
+              <div className="flex gap-2 flex-wrap">
+                {HABIT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      selectedColor === color
+                        ? 'border-gray-900 dark:border-gray-100 scale-110'
+                        : 'border-gray-300 dark:border-gray-600 hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setSelectedColor(color)}
+                    aria-label={`Select color ${color}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!name.trim()}>
+              Create Habit
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}; 

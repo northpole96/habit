@@ -1,102 +1,133 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useHabits } from '@/hooks/useHabits';
+import { CreateHabitDialog } from '@/components/CreateHabitDialog';
+import { HabitCard } from '@/components/HabitCard';
+import { TrendingUp, Target, Calendar } from 'lucide-react';
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+export default function HabitTracker() {
+  const {
+    habits,
+    isLoading,
+    addHabit,
+    deleteHabit,
+    toggleHabitCompletion,
+    getHabitStreak,
+    isHabitCompletedToday,
+  } = useHabits();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your habits...</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </div>
+    );
+  }
+
+  const totalHabits = habits.length;
+  const completedToday = habits.filter(habit => isHabitCompletedToday(habit)).length;
+  const totalStreaks = habits.reduce((sum, habit) => sum + getHabitStreak(habit), 0);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Habit Tracker</h1>
+              <p className="text-muted-foreground">
+                Build consistency, track progress, and achieve your goals
+              </p>
+            </div>
+            <CreateHabitDialog onCreateHabit={addHabit} />
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      {totalHabits > 0 && (
+        <div className="border-b bg-muted/20">
+          <div className="container mx-auto px-4 py-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 p-4 bg-card rounded-lg border">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Habits</p>
+                  <p className="text-2xl font-semibold">{totalHabits}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-4 bg-card rounded-lg border">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <Calendar className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Completed Today</p>
+                  <p className="text-2xl font-semibold">
+                    {completedToday}/{totalHabits}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-4 bg-card rounded-lg border">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Streaks</p>
+                  <p className="text-2xl font-semibold">{totalStreaks}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
+        {habits.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="mb-4">
+                <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">No habits yet</h2>
+                <p className="text-muted-foreground mb-6">
+                  Start building better habits today. Create your first habit to begin tracking your progress.
+                </p>
+              </div>
+              <CreateHabitDialog onCreateHabit={addHabit} />
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {habits.map((habit) => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                isCompletedToday={isHabitCompletedToday(habit)}
+                currentStreak={getHabitStreak(habit)}
+                onToggleCompletion={toggleHabitCompletion}
+                onDelete={deleteHabit}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <footer className="border-t bg-muted/20 mt-12">
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center text-sm text-muted-foreground">
+            <p>Built with Next.js, Tailwind CSS, and shadcn/ui</p>
+            <p className="mt-1">Track your habits, build consistency, achieve your goals 🎯</p>
+          </div>
+        </div>
       </footer>
     </div>
   );
