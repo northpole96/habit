@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { Habit } from '@/types/habit';
-import { eachDayOfInterval, format, startOfYear, endOfYear, startOfWeek, isSameDay } from 'date-fns';
+import { eachDayOfInterval, format, startOfWeek, isSameDay, addWeeks, subWeeks } from 'date-fns';
 
 interface HabitGraphProps {
   habit: Habit;
@@ -12,24 +12,22 @@ interface HabitGraphProps {
 
 export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) => {
   const graphData = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const yearStart = startOfYear(new Date(currentYear, 0, 1));
-    const yearEnd = endOfYear(new Date(currentYear, 0, 1));
-    
-    // Start from the first day of the week containing January 1st
-    const graphStart = startOfWeek(yearStart);
-    const totalWeeks = Math.ceil((yearEnd.getTime() - graphStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    const today = new Date();
+    const endOfGraph = startOfWeek(today, { weekStartsOn: 0 }); // Start week on Sunday
+    const startOfGraph = subWeeks(endOfGraph, 51); // 52 weeks total (0-51)
     
     // Create a grid of weeks and days
     const weeks = [];
-    for (let week = 0; week < totalWeeks; week++) {
+    for (let week = 0; week < 52; week++) {
       const weekDays = [];
+      const weekStart = addWeeks(startOfGraph, week);
+      
       for (let day = 0; day < 7; day++) {
-        const currentDate = new Date(graphStart);
-        currentDate.setDate(graphStart.getDate() + week * 7 + day);
+        const currentDate = new Date(weekStart);
+        currentDate.setDate(weekStart.getDate() + day);
         
         const dateString = format(currentDate, 'yyyy-MM-dd');
-        const isCurrentYear = currentDate.getFullYear() === currentYear;
+        const isWithinRange = currentDate <= today;
         
         let value = 0;
         let isCompleted = false;
@@ -49,7 +47,7 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
           dateString,
           isCompleted,
           value,
-          isCurrentYear,
+          isWithinRange,
         });
       }
       weeks.push(weekDays);
@@ -58,8 +56,8 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
     return weeks;
   }, [habit.completedDates, habit.entries, habit.target, habit.type]);
 
-  const getIntensityClass = (isCompleted: boolean, value: number, isCurrentYear: boolean) => {
-    if (!isCurrentYear) return 'bg-gray-100 dark:bg-gray-800';
+  const getIntensityClass = (isCompleted: boolean, value: number, isWithinRange: boolean) => {
+    if (!isWithinRange) return 'bg-gray-100 dark:bg-gray-800';
     
     if (habit.type === 'checkbox') {
       if (isCompleted) return 'bg-green-500 dark:bg-green-400';
@@ -93,35 +91,45 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
   };
 
   const handleCellClick = (day: any) => {
-    if (onCellClick && day.isCurrentYear) {
+    if (onCellClick && day.isWithinRange) {
       onCellClick(day.dateString, day.value, day.isCompleted);
     }
   };
 
   const monthLabels = useMemo(() => {
+    if (graphData.length === 0) return [];
+    
     const months = [];
-    const currentYear = new Date().getFullYear();
-    for (let month = 0; month < 12; month++) {
-      const date = new Date(currentYear, month, 1);
-      months.push({
-        name: format(date, 'MMM'),
-        offset: Math.floor((date.getTime() - startOfWeek(startOfYear(date)).getTime()) / (7 * 24 * 60 * 60 * 1000)),
-      });
-    }
+    let currentMonth = -1;
+    
+    graphData.forEach((week, weekIndex) => {
+      const firstDayOfWeek = week[0].date;
+      const month = firstDayOfWeek.getMonth();
+      
+      if (month !== currentMonth) {
+        currentMonth = month;
+        months.push({
+          name: format(firstDayOfWeek, 'MMM'),
+          weekIndex,
+          year: firstDayOfWeek.getFullYear(),
+        });
+      }
+    });
+    
     return months;
-  }, []);
+  }, [graphData]);
 
   return (
     <div className={`p-4 ${className}`}>
       <div className="overflow-x-auto">
         <div className="inline-block min-w-full">
           {/* Month labels */}
-          <div className="flex mb-2 text-xs text-gray-600 dark:text-gray-400">
+          <div className="flex mb-2 text-xs text-gray-600 dark:text-gray-400 relative">
             {monthLabels.map((month, index) => (
               <div
-                key={month.name}
-                className="flex-none"
-                style={{ marginLeft: index === 0 ? `${month.offset * 12}px` : '24px' }}
+                key={`${month.name}-${month.year}-${index}`}
+                className="absolute"
+                style={{ left: `${month.weekIndex * 16 + 40}px` }}
               >
                 {month.name}
               </div>
@@ -150,9 +158,9 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
                       className={`w-3 h-3 rounded-sm transition-all ${getIntensityClass(
                         day.isCompleted,
                         day.value,
-                        day.isCurrentYear
+                        day.isWithinRange
                       )} ${
-                        day.isCurrentYear && onCellClick 
+                        day.isWithinRange && onCellClick 
                           ? 'cursor-pointer hover:ring-2 hover:ring-blue-300 hover:scale-110' 
                           : ''
                       }`}
