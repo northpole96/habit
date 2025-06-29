@@ -127,6 +127,7 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
     
     const months: Array<{ name: string; weekIndex: number; year: number }> = [];
     let currentMonth = -1;
+    let currentMonthStartWeek = 0;
     
     graphData.forEach((week, weekIndex) => {
       const firstValidDay = week.find(day => day !== null);
@@ -135,14 +136,25 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
       const month = firstValidDay.date.getMonth();
       
       if (month !== currentMonth) {
+        // If we have a previous month, update its weekIndex to the end of that month
+        if (months.length > 0) {
+          months[months.length - 1].weekIndex = weekIndex - 1;
+        }
+        
         currentMonth = month;
+        currentMonthStartWeek = weekIndex;
         months.push({
           name: format(firstValidDay.date, 'MMM'),
-          weekIndex,
+          weekIndex: weekIndex, // Will be updated to end week when next month starts
           year: firstValidDay.date.getFullYear(),
         });
       }
     });
+    
+    // Handle the last month - set it to the last week
+    if (months.length > 0) {
+      months[months.length - 1].weekIndex = graphData.length - 1;
+    }
     
     return months;
   }, [graphData]);
@@ -151,7 +163,7 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
     <div className={`p-4 ${className}`}>
       <div className="w-full">
         {/* Month labels */}
-        <div className="flex mb-2 text-xs text-gray-600 dark:text-gray-400 relative" style={{ marginLeft: '2.5rem' }}>
+        <div className="flex mb-6 text-xs text-gray-600 dark:text-gray-400 relative" style={{ marginLeft: '2.5rem' }}>
           {monthLabels.map((month, index) => (
             <div
               key={`${month.name}-${month.year}-${index}`}
@@ -193,7 +205,7 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
                   return (
                     <div
                       key={`${weekIndex}-${dayIndex}`}
-                      className={`w-full aspect-square rounded-sm transition-all ${getIntensityClass(
+                      className={`w-full aspect-square rounded-xs transition-all ${getIntensityClass(
                         day.isCompleted,
                         day.value,
                         day.isWithinRange
