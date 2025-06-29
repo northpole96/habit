@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Check, Flame, Trash2, Target, Hash, CheckSquare, TrendingUp, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Flame, Trash2, Target, Hash, CheckSquare, TrendingUp, BarChart3, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Habit } from '@/types/habit';
 import { HabitGraph } from './HabitGraph';
+import { EditHabitEntryDialog } from './EditHabitEntryDialog';
 
 interface HabitCardProps {
   habit: Habit;
@@ -38,34 +38,30 @@ export const HabitCard = ({
   onUpdateEntry,
   onDelete,
 }: HabitCardProps) => {
-  const [inputValue, setInputValue] = useState(todayValue.toString());
-  
-  // Update input value when todayValue changes
-  useEffect(() => {
-    setInputValue(todayValue.toString());
-  }, [todayValue]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedValue, setSelectedValue] = useState(0);
+  const [selectedIsCompleted, setSelectedIsCompleted] = useState(false);
   
   const today = new Date().toISOString().split('T')[0];
   
-  const handleToggleCompletion = () => {
-    if (habit.type === 'checkbox') {
-      onToggleCompletion(habit.id, today);
-    }
+  const handleCellClick = (date: string, value: number, isCompleted: boolean) => {
+    setSelectedDate(date);
+    setSelectedValue(value);
+    setSelectedIsCompleted(isCompleted);
+    setEditDialogOpen(true);
   };
 
-  const handleNumberSubmit = () => {
-    const value = parseFloat(inputValue) || 0;
-    onUpdateEntry(habit.id, today, value);
+  const handleTodayClick = () => {
+    handleCellClick(today, todayValue, isCompletedToday);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
+  const handleDialogSave = (date: string, value: number) => {
+    onUpdateEntry(habit.id, date, value);
   };
 
-  const handleInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleNumberSubmit();
-    }
+  const handleDialogToggle = (date: string) => {
+    onToggleCompletion(habit.id, date);
   };
 
   const completionRate = totalCount > 0 
@@ -125,38 +121,24 @@ export const HabitCard = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Today</span>
-            {habit.type === 'checkbox' ? (
-              <Button
-                onClick={handleToggleCompletion}
-                variant={isCompletedToday ? 'default' : 'outline'}
-                size="sm"
-                className={`gap-2 ${
-                  isCompletedToday 
-                    ? 'bg-green-500 hover:bg-green-600 text-white' 
-                    : 'hover:bg-green-50 dark:hover:bg-green-950'
-                }`}
-              >
-                <Check className="h-4 w-4" />
-                {isCompletedToday ? 'Completed' : 'Mark Done'}
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  onKeyPress={handleInputKeyPress}
-                  onBlur={handleNumberSubmit}
-                  className="w-20 h-8 text-center"
-                  placeholder="0"
-                />
-                <span className="text-sm text-muted-foreground">
-                  {habit.unit || 'units'}
-                </span>
-              </div>
-            )}
+            <Button
+              onClick={handleTodayClick}
+              variant={isCompletedToday || todayValue > 0 ? 'default' : 'outline'}
+              size="sm"
+              className={`gap-2 ${
+                habit.type === 'checkbox' && isCompletedToday
+                  ? 'bg-green-500 hover:bg-green-600 text-white' 
+                  : habit.type === 'number' && todayValue > 0
+                  ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                  : ''
+              }`}
+            >
+              <Calendar className="h-4 w-4" />
+              {habit.type === 'checkbox' 
+                ? (isCompletedToday ? 'Completed' : 'Mark Done')
+                : `${todayValue} ${habit.unit || 'units'}`
+              }
+            </Button>
           </div>
           
           {/* Progress bar for number habits */}
@@ -191,7 +173,7 @@ export const HabitCard = ({
               </span>
             )}
           </div>
-          <HabitGraph habit={habit} />
+          <HabitGraph habit={habit} onCellClick={handleCellClick} />
         </div>
 
         {/* Insights section */}
@@ -266,6 +248,18 @@ export const HabitCard = ({
           </Badge>
         </div>
       </CardContent>
+
+      {/* Edit Entry Dialog */}
+      <EditHabitEntryDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        habit={habit}
+        date={selectedDate}
+        currentValue={selectedValue}
+        isCompleted={selectedIsCompleted}
+        onSave={handleDialogSave}
+        onToggleCompletion={handleDialogToggle}
+      />
     </Card>
   );
 }; 

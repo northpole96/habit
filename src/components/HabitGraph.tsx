@@ -6,10 +6,11 @@ import { eachDayOfInterval, format, startOfYear, endOfYear, startOfWeek, isSameD
 
 interface HabitGraphProps {
   habit: Habit;
+  onCellClick?: (date: string, value: number, isCompleted: boolean) => void;
   className?: string;
 }
 
-export const HabitGraph = ({ habit, className }: HabitGraphProps) => {
+export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) => {
   const graphData = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const yearStart = startOfYear(new Date(currentYear, 0, 1));
@@ -91,6 +92,12 @@ export const HabitGraph = ({ habit, className }: HabitGraphProps) => {
     }
   };
 
+  const handleCellClick = (day: any) => {
+    if (onCellClick && day.isCurrentYear) {
+      onCellClick(day.dateString, day.value, day.isCompleted);
+    }
+  };
+
   const monthLabels = useMemo(() => {
     const months = [];
     const currentYear = new Date().getFullYear();
@@ -140,12 +147,17 @@ export const HabitGraph = ({ habit, className }: HabitGraphProps) => {
                   {week.map((day, dayIndex) => (
                     <div
                       key={`${weekIndex}-${dayIndex}`}
-                      className={`w-3 h-3 rounded-sm transition-colors ${getIntensityClass(
+                      className={`w-3 h-3 rounded-sm transition-all ${getIntensityClass(
                         day.isCompleted,
                         day.value,
                         day.isCurrentYear
-                      )}`}
+                      )} ${
+                        day.isCurrentYear && onCellClick 
+                          ? 'cursor-pointer hover:ring-2 hover:ring-blue-300 hover:scale-110' 
+                          : ''
+                      }`}
                       title={getTooltipText(day)}
+                      onClick={() => handleCellClick(day)}
                     />
                   ))}
                 </div>
@@ -171,6 +183,14 @@ export const HabitGraph = ({ habit, className }: HabitGraphProps) => {
           {habit.type === 'number' && (
             <div className="mt-2 text-xs text-muted-foreground text-center">
               Target: {habit.target}{habit.unit ? ` ${habit.unit}` : ''} per day
+              {onCellClick && <div className="mt-1">Click on any day to edit</div>}
+            </div>
+          )}
+          
+          {/* Click instruction for checkbox habits */}
+          {habit.type === 'checkbox' && onCellClick && (
+            <div className="mt-2 text-xs text-muted-foreground text-center">
+              Click on any day to mark complete/incomplete
             </div>
           )}
         </div>
