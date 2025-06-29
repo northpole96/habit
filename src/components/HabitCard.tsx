@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Habit } from '@/types/habit';
 import { HabitGraph } from './HabitGraph';
 import { EditHabitEntryDialog } from './EditHabitEntryDialog';
+import { useSettings } from '@/hooks/useSettings';
 
 interface HabitCardProps {
   habit: Habit;
@@ -42,6 +43,8 @@ export const HabitCard = ({
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedValue, setSelectedValue] = useState(0);
   const [selectedIsCompleted, setSelectedIsCompleted] = useState(false);
+  
+  const { settings } = useSettings();
   
   const today = new Date().toISOString().split('T')[0];
   
@@ -165,15 +168,15 @@ export const HabitCard = ({
 
         {/* Activity graph - always shown */}
         <div className="space-y-3">
-          <div className="text-sm font-medium">
-            {new Date().getFullYear()} Activity
-            {habit.type === 'number' && (
-              <span className="text-xs text-muted-foreground ml-2">
-                (Darker = higher values)
-              </span>
-            )}
-          </div>
-          <HabitGraph habit={habit} onCellClick={handleCellClick} />
+                      <div className="text-sm font-medium">
+              {new Date().getFullYear()} Activity
+              {habit.type === 'number' && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  (Darker = higher values)
+                </span>
+              )}
+            </div>
+            <HabitGraph habit={habit} onCellClick={handleCellClick} cellSize={settings.cellSize} />
         </div>
 
         {/* Insights section */}

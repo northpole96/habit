@@ -8,9 +8,10 @@ interface HabitGraphProps {
   habit: Habit;
   onCellClick?: (date: string, value: number, isCompleted: boolean) => void;
   className?: string;
+  cellSize?: number; // Cell size in pixels
 }
 
-export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) => {
+export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: HabitGraphProps) => {
   const graphData = useMemo(() => {
     const today = new Date();
     
@@ -159,16 +160,38 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
     return months;
   }, [graphData]);
 
+    const gap = Math.max(1, Math.floor(cellSize / 12)); // Dynamic gap based on cell size
+  const weekWidth = cellSize + gap;
+  const dayLabelWidth = Math.max(40, cellSize * 2);
+
+  // Calculate day label positions based on today's position
+  const today = new Date();
+  const todayDayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+  
+  // Since today is always at bottom-right (row 6), calculate which rows correspond to each day
+  const getDayRow = (targetDay: number) => {
+    // Formula: (13 + targetDay - todayDayOfWeek) % 7
+    // This positions today at row 6 and calculates other days relative to it
+    return (13 + targetDay - todayDayOfWeek) % 7;
+  };
+  
+  const mondayRow = getDayRow(1); // Monday = 1
+  const wednesdayRow = getDayRow(3); // Wednesday = 3
+  const fridayRow = getDayRow(5); // Friday = 5
+
   return (
     <div className={`p-4 ${className}`}>
       <div className="w-full">
         {/* Month labels */}
-        <div className="flex mb-6 text-xs text-gray-600 dark:text-gray-400 relative" style={{ marginLeft: '2.5rem' }}>
+        <div 
+          className="flex mb-6 text-xs text-gray-600 dark:text-gray-400 relative" 
+          style={{ marginLeft: `${dayLabelWidth}px` }}
+        >
           {monthLabels.map((month, index) => (
             <div
               key={`${month.name}-${month.year}-${index}`}
               className="absolute"
-              style={{ left: `${month.weekIndex * (100 / 52)}%` }}
+              style={{ left: `${month.weekIndex * weekWidth}px` }}
             >
               {month.name}
             </div>
@@ -177,27 +200,66 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
         
         {/* Day labels */}
         <div className="flex">
-          <div className="flex flex-col text-xs text-gray-600 dark:text-gray-400 mr-2 w-10">
-            <div className="h-3"></div>
-            <div className="h-3 flex items-center">Mon</div>
-            <div className="h-3"></div>
-            <div className="h-3 flex items-center">Wed</div>
-            <div className="h-3"></div>
-            <div className="h-3 flex items-center">Fri</div>
-            <div className="h-3"></div>
+          <div 
+            className="relative text-xs text-gray-600 dark:text-gray-400 mr-2"
+            style={{ width: `${dayLabelWidth}px` }}
+          >
+            {/* Monday label */}
+            <div 
+              className="absolute flex items-center"
+              style={{ 
+                top: `${mondayRow * (cellSize + gap)}px`,
+                height: `${cellSize}px`
+              }}
+            >
+              Mon
+            </div>
+            
+            {/* Wednesday label */}
+            <div 
+              className="absolute flex items-center"
+              style={{ 
+                top: `${wednesdayRow * (cellSize + gap)}px`,
+                height: `${cellSize}px`
+              }}
+            >
+              Wed
+            </div>
+            
+            {/* Friday label */}
+            <div 
+              className="absolute flex items-center"
+              style={{ 
+                top: `${fridayRow * (cellSize + gap)}px`,
+                height: `${cellSize}px`
+              }}
+            >
+              Fri
+            </div>
           </div>
           
           {/* Graph grid */}
-          <div className="flex-1 flex gap-1">
+          <div className="flex-1 flex" style={{ gap: `${gap}px` }}>
             {graphData.map((week, weekIndex) => (
-              <div key={weekIndex} className="flex flex-col gap-1 flex-1">
+              <div 
+                key={weekIndex} 
+                className="flex flex-col" 
+                style={{ 
+                  width: `${cellSize}px`,
+                  gap: `${gap}px`
+                }}
+              >
                 {week.map((day, dayIndex) => {
                   if (!day) {
                     // Empty cell for alignment
                     return (
                       <div
                         key={`${weekIndex}-${dayIndex}`}
-                        className="w-full aspect-square rounded-sm bg-transparent"
+                        className="rounded-sm bg-transparent"
+                        style={{
+                          width: `${cellSize}px`,
+                          height: `${cellSize}px`,
+                        }}
                       />
                     );
                   }
@@ -205,7 +267,7 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
                   return (
                     <div
                       key={`${weekIndex}-${dayIndex}`}
-                      className={`w-full aspect-square rounded-xs transition-all ${getIntensityClass(
+                      className={`rounded-xs transition-all ${getIntensityClass(
                         day.isCompleted,
                         day.value,
                         day.isWithinRange
@@ -214,6 +276,10 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
                           ? 'cursor-pointer hover:ring-2 hover:ring-blue-300 hover:scale-110' 
                           : ''
                       }`}
+                      style={{
+                        width: `${cellSize}px`,
+                        height: `${cellSize}px`,
+                      }}
                       title={getTooltipText(day)}
                       onClick={() => handleCellClick(day)}
                     />
@@ -227,13 +293,31 @@ export const HabitGraph = ({ habit, onCellClick, className }: HabitGraphProps) =
         {/* Legend */}
         <div className="flex items-center justify-between mt-4 text-xs text-gray-600 dark:text-gray-400">
           <span>Less</span>
-          <div className="flex gap-1">
-            <div className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700"></div>
-            <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-700"></div>
-            <div className="w-3 h-3 rounded-sm bg-green-300 dark:bg-green-600"></div>
-            <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-500"></div>
-            <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-400"></div>
-            <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-300"></div>
+          <div className="flex" style={{ gap: `${gap}px` }}>
+            <div 
+              className="rounded-sm bg-gray-200 dark:bg-gray-700"
+              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
+            ></div>
+            <div 
+              className="rounded-sm bg-green-200 dark:bg-green-700"
+              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
+            ></div>
+            <div 
+              className="rounded-sm bg-green-300 dark:bg-green-600"
+              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
+            ></div>
+            <div 
+              className="rounded-sm bg-green-400 dark:bg-green-500"
+              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
+            ></div>
+            <div 
+              className="rounded-sm bg-green-500 dark:bg-green-400"
+              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
+            ></div>
+            <div 
+              className="rounded-sm bg-green-600 dark:bg-green-300"
+              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
+            ></div>
           </div>
           <span>More</span>
         </div>

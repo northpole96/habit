@@ -3,6 +3,7 @@
 import { useHabits } from '@/hooks/useHabits';
 import { CreateHabitDialog } from '@/components/CreateHabitDialog';
 import { HabitCard } from '@/components/HabitCard';
+import { SettingsDialog } from '@/components/SettingsDialog';
 import { TrendingUp, Target, Calendar } from 'lucide-react';
 
 export default function HabitTracker() {
@@ -50,7 +51,10 @@ export default function HabitTracker() {
                 Build consistency, track progress, and achieve your goals
               </p>
             </div>
-            <CreateHabitDialog onCreateHabit={addHabit} />
+            <div className="flex items-center gap-3">
+              <SettingsDialog />
+              <CreateHabitDialog onCreateHabit={addHabit} />
+            </div>
           </div>
         </div>
       </div>
@@ -119,7 +123,7 @@ export default function HabitTracker() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 max-w-4xl mx-auto">
+          <div className="flex flex-col gap-6 mx-auto">
             {habits.map((habit) => (
               <HabitCard
                 key={habit.id}
