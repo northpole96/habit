@@ -22,6 +22,7 @@ export default function HabitTracker() {
     isHabitCompletedToday,
     getTodayEntry,
     getTotalCount,
+    addRandomEntries,
   } = useHabits();
 
   if (isLoading) {
@@ -139,6 +140,7 @@ export default function HabitTracker() {
                 onToggleCompletion={toggleHabitCompletion}
                 onUpdateEntry={updateHabitEntry}
                 onDelete={deleteHabit}
+                onAddRandomEntries={addRandomEntries}
               />
             ))}
           </div>

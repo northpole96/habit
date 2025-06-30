@@ -313,6 +313,64 @@ export const useHabits = () => {
     }
   };
 
+  const addRandomEntries = (habitId: string, daysBack: number = 364) => {
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+
+    const updatedHabits = habits.map(h => {
+      if (h.id !== habitId) return h;
+
+      const today = new Date();
+      const randomDates: string[] = [];
+      const randomEntries: { date: string; value: number }[] = [];
+
+      for (let i = 0; i < daysBack; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+
+        // Skip if already has data for this date
+        if (h.type === 'checkbox' && h.completedDates.includes(dateString)) continue;
+        if (h.type === 'number' && h.entries?.some(entry => entry.date === dateString)) continue;
+
+        if (h.type === 'checkbox') {
+          // For checkbox habits, randomly complete about 60-80% of days
+          const completionRate = 0.6 + Math.random() * 0.2; // 60-80%
+          if (Math.random() < completionRate) {
+            randomDates.push(dateString);
+          }
+        } else if (h.type === 'number') {
+          // For number habits, generate realistic random values
+          const target = h.target || 1;
+          const baseValue = target * 0.3; // Minimum 30% of target
+          const variationRange = target * 1.4; // Can go up to 140% of target
+          
+          // Sometimes skip days (about 20% of the time)
+          if (Math.random() > 0.2) {
+            const randomValue = Math.max(0, baseValue + (Math.random() * variationRange));
+            // Round to reasonable decimal places
+            const roundedValue = Math.round(randomValue * 100) / 100;
+            randomEntries.push({ date: dateString, value: roundedValue });
+          }
+        }
+      }
+
+      if (h.type === 'checkbox') {
+        return {
+          ...h,
+          completedDates: [...h.completedDates, ...randomDates].sort()
+        };
+      } else {
+        return {
+          ...h,
+          entries: [...(h.entries || []), ...randomEntries].sort((a, b) => a.date.localeCompare(b.date))
+        };
+      }
+    });
+
+    saveHabits(updatedHabits);
+  };
+
   return {
     habits,
     isLoading,
@@ -328,5 +386,6 @@ export const useHabits = () => {
     isHabitCompletedToday,
     getTodayEntry,
     getTotalCount,
+    addRandomEntries,
   };
 }; 

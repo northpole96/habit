@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Flame, Trash2, Target, Hash, CheckSquare, TrendingUp, BarChart3, Calendar } from 'lucide-react';
+import { Check, Flame, Trash2, Target, Hash, CheckSquare, TrendingUp, BarChart3, Calendar, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ interface HabitCardProps {
   onToggleCompletion: (habitId: string, date: string) => void;
   onUpdateEntry: (habitId: string, date: string, value: number) => void;
   onDelete: (habitId: string) => void;
+  onAddRandomEntries: (habitId: string) => void;
 }
 
 export const HabitCard = ({
@@ -38,6 +39,7 @@ export const HabitCard = ({
   onToggleCompletion,
   onUpdateEntry,
   onDelete,
+  onAddRandomEntries,
 }: HabitCardProps) => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -108,14 +110,25 @@ export const HabitCard = ({
               </div>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(habit.id)}
-            className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onAddRandomEntries(habit.id)}
+              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+              title="Add random test data"
+            >
+              <TestTube className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(habit.id)}
+              className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
