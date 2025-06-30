@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 
 interface Settings {
   cellSize: number;
+  hoverDelay: number; // Delay in milliseconds for hover tooltip
 }
 
 const DEFAULT_SETTINGS: Settings = {
   cellSize: 24,
+  hoverDelay: 0, // Default no delay
 };
 
 const SETTINGS_KEY = 'habit-tracker-settings';

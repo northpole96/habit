@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { Habit } from '@/types/habit';
 import { eachDayOfInterval, format, startOfWeek, isSameDay, addWeeks, subWeeks } from 'date-fns';
+import { useSettings } from '@/hooks/useSettings';
 
 interface HabitGraphProps {
   habit: Habit;
@@ -12,6 +13,14 @@ interface HabitGraphProps {
 }
 
 export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: HabitGraphProps) => {
+  const { settings } = useSettings();
+  const [tooltip, setTooltip] = useState<{
+    show: boolean;
+    content: string;
+    x: number;
+    y: number;
+  }>({ show: false, content: '', x: 0, y: 0 });
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const graphData = useMemo(() => {
     const today = new Date();
     
@@ -105,7 +114,8 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
   };
 
   const getTooltipText = (day: any) => {
-    const dateStr = format(day.date, 'MMM d, yyyy');
+    // Format: "Mon Jan 02 2025"
+    const dateStr = format(day.date, 'EEE MMM dd yyyy');
     
     if (habit.type === 'checkbox') {
       return `${dateStr} - ${day.isCompleted ? 'Completed' : 'Not completed'}`;
@@ -116,6 +126,55 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
       return `${dateStr} - ${day.value}${unit}${progress}`;
     }
   };
+
+  const handleMouseEnter = (day: any, event: React.MouseEvent) => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const tooltipContent = getTooltipText(day);
+
+    if (settings.hoverDelay === 0) {
+      // Show immediately
+      setTooltip({
+        show: true,
+        content: tooltipContent,
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
+      });
+    } else {
+      // Show after delay
+      hoverTimeoutRef.current = setTimeout(() => {
+        setTooltip({
+          show: true,
+          content: tooltipContent,
+          x: rect.left + rect.width / 2,
+          y: rect.top - 8,
+        });
+      }, settings.hoverDelay);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    // Clear timeout if mouse leaves before delay completes
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+
+    setTooltip(prev => ({ ...prev, show: false }));
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCellClick = (day: any) => {
     if (onCellClick && day.isWithinRange) {
@@ -280,7 +339,8 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
                         width: `${cellSize}px`,
                         height: `${cellSize}px`,
                       }}
-                      title={getTooltipText(day)}
+                      onMouseEnter={(e) => handleMouseEnter(day, e)}
+                      onMouseLeave={handleMouseLeave}
                       onClick={() => handleCellClick(day)}
                     />
                   );
@@ -337,6 +397,20 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
           </div>
         )}
       </div>
+
+      {/* Custom Tooltip */}
+      {tooltip.show && (
+        <div
+          className="fixed z-50 px-2 py-1 text-xs bg-gray-900 text-white rounded shadow-lg pointer-events-none transform -translate-x-1/2 -translate-y-full"
+          style={{
+            left: tooltip.x,
+            top: tooltip.y,
+          }}
+        >
+          {tooltip.content}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+        </div>
+      )}
     </div>
   );
 }; 

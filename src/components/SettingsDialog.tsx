@@ -14,12 +14,14 @@ interface SettingsDialogProps {
 export const SettingsDialog = ({ children }: SettingsDialogProps) => {
   const { settings, updateSettings, resetSettings } = useSettings();
   const [localCellSize, setLocalCellSize] = useState(settings.cellSize);
+  const [localHoverDelay, setLocalHoverDelay] = useState(settings.hoverDelay);
   const [open, setOpen] = useState(false);
 
   // Update local state when settings change
   useEffect(() => {
     setLocalCellSize(settings.cellSize);
-  }, [settings.cellSize]);
+    setLocalHoverDelay(settings.hoverDelay);
+  }, [settings.cellSize, settings.hoverDelay]);
 
   const handleCellSizeChange = (newSize: number) => {
     const clampedSize = Math.max(8, Math.min(48, newSize));
@@ -27,9 +29,16 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
     updateSettings({ cellSize: clampedSize });
   };
 
+  const handleHoverDelayChange = (newDelay: number) => {
+    const clampedDelay = Math.max(0, Math.min(2000, newDelay));
+    setLocalHoverDelay(clampedDelay);
+    updateSettings({ hoverDelay: clampedDelay });
+  };
+
   const handleReset = () => {
     resetSettings();
     setLocalCellSize(24); // Reset to default
+    setLocalHoverDelay(0); // Reset to default
   };
 
   const triggerButton = children || (
@@ -111,6 +120,42 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
                   />
                 </div>
                 <span className="text-xs text-muted-foreground ml-2">Sample cells</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Hover Delay Setting */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="hoverDelay" className="text-sm font-medium">
+                Hover Tooltip Delay
+              </Label>
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleHoverDelayChange(localHoverDelay - 100)}
+                  disabled={localHoverDelay <= 0}
+                  className="h-8 w-8 p-0"
+                >
+                  -
+                </Button>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-mono w-12 text-center">{localHoverDelay}</span>
+                  <span className="text-sm text-muted-foreground">ms</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleHoverDelayChange(localHoverDelay + 100)}
+                  disabled={localHoverDelay >= 2000}
+                  className="h-8 w-8 p-0"
+                >
+                  +
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Delay before showing hover tooltips (0-2000ms). 0 = instant.
               </div>
             </div>
           </div>
