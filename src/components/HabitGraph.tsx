@@ -98,24 +98,63 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
     return weeks;
   }, [habit.completedDates, habit.entries, habit.target, habit.type]);
 
+  // Helper function to convert hex color to RGB
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 34, g: 197, b: 94 }; // fallback to green
+  };
+
+  const getIntensityStyle = (isCompleted: boolean, value: number, isWithinRange: boolean) => {
+    if (!isWithinRange) {
+      return {};
+    }
+    
+    if (habit.type === 'checkbox') {
+      if (isCompleted) {
+        return {
+          backgroundColor: habit.color,
+        };
+      }
+      return {};
+    } else {
+      // For number habits, calculate intensity based on value relative to target
+      const target = habit.target || 1;
+      if (value === 0) {
+        return {};
+      }
+      
+      const intensity = Math.min(value / target, 2); // Cap at 2x target for max intensity      
+      const rgb = hexToRgb(habit.color);
+      let opacity = 0.3; // base opacity
+      
+      if (intensity >= 2) opacity = 1.0;
+      else if (intensity >= 1.5) opacity = 0.9;
+      else if (intensity >= 1) opacity = 0.8;
+      else if (intensity >= 0.5) opacity = 0.6;
+      else opacity = 0.4;
+      
+      return {
+        backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`,
+      };
+    }
+  };
+
   const getIntensityClass = (isCompleted: boolean, value: number, isWithinRange: boolean) => {
     if (!isWithinRange) return 'bg-gray-100 dark:bg-gray-800';
     
     if (habit.type === 'checkbox') {
-      if (isCompleted) return 'bg-green-500 dark:bg-green-400';
+      if (isCompleted) return ''; // Will use inline style
       return 'bg-gray-200 dark:bg-gray-700';
     } else {
       // For number habits, calculate intensity based on value relative to target
       const target = habit.target || 1;
       if (value === 0) return 'bg-gray-200 dark:bg-gray-700';
       
-      const intensity = Math.min(value / target, 2); // Cap at 2x target for max intensity
-      
-      if (intensity >= 2) return 'bg-green-600 dark:bg-green-300';
-      if (intensity >= 1.5) return 'bg-green-500 dark:bg-green-400';
-      if (intensity >= 1) return 'bg-green-400 dark:bg-green-500';
-      if (intensity >= 0.5) return 'bg-green-300 dark:bg-green-600';
-      return 'bg-green-200 dark:bg-green-700';
+      return ''; // Will use inline style for colored cells
     }
   };
 
@@ -342,6 +381,7 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
                       style={{
                         width: `${cellSize}px`,
                         height: `${cellSize}px`,
+                        ...getIntensityStyle(day.isCompleted, day.value, day.isWithinRange),
                       }}
                       onMouseEnter={(e) => handleMouseEnter(day, e)}
                       onMouseLeave={handleMouseLeave}
@@ -358,30 +398,24 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
         <div className="flex items-center justify-between mt-4 text-xs text-gray-600 dark:text-gray-400">
           <span>Less</span>
           <div className="flex" style={{ gap: `${gap}px` }}>
-            <div 
-              className="rounded-sm bg-gray-200 dark:bg-gray-700"
-              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
-            ></div>
-            <div 
-              className="rounded-sm bg-green-200 dark:bg-green-700"
-              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
-            ></div>
-            <div 
-              className="rounded-sm bg-green-300 dark:bg-green-600"
-              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
-            ></div>
-            <div 
-              className="rounded-sm bg-green-400 dark:bg-green-500"
-              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
-            ></div>
-            <div 
-              className="rounded-sm bg-green-500 dark:bg-green-400"
-              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
-            ></div>
-            <div 
-              className="rounded-sm bg-green-600 dark:bg-green-300"
-              style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
-            ></div>
+            {(() => {
+              const rgb = hexToRgb(habit.color);
+              const opacities = [0, 0.4, 0.6, 0.8, 0.9, 1.0];
+              
+              return opacities.map((opacity, index) => (
+                <div 
+                  key={index}
+                  className={index === 0 ? "rounded-sm bg-gray-200 dark:bg-gray-700" : "rounded-sm"}
+                  style={{ 
+                    width: `${cellSize}px`, 
+                    height: `${cellSize}px`,
+                    backgroundColor: index === 0 
+                      ? undefined // Use Tailwind class for gray
+                      : `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`
+                  }}
+                ></div>
+              ));
+            })()}
           </div>
           <span>More</span>
         </div>
