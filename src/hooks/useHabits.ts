@@ -23,7 +23,7 @@ export const useHabits = () => {
         if (savedHabits) {
           const parsedHabits = JSON.parse(savedHabits);
           // Migrate old habits to new format
-          const migratedHabits = parsedHabits.map((habit: any) => ({
+          const migratedHabits = parsedHabits.map((habit: Partial<Habit>) => ({
             ...habit,
             type: habit.type || 'checkbox', // Default to checkbox for existing habits
             entries: habit.entries || [],

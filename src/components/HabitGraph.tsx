@@ -2,8 +2,17 @@
 
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { Habit } from '@/types/habit';
-import { eachDayOfInterval, format, startOfWeek, isSameDay, addWeeks, subWeeks } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { useSettings } from '@/hooks/useSettings';
+
+interface DayData {
+  date: Date;
+  dateString: string;
+  isCompleted: boolean;
+  value: number;
+  isWithinRange: boolean;
+  dayOfWeek: number;
+}
 
 interface HabitGraphProps {
   habit: Habit;
@@ -64,9 +73,6 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
     // Today should be in bottom-right, so we need to align the grid properly
     const weeks = [];
     
-    // Find what day of week today is to determine the alignment
-    const todayDayOfWeek = today.getDay();  // 0 = Sunday, 6 = Saturday
-    
     // Calculate how many empty cells we need at the beginning to align today at bottom-right
     const totalCells = 52 * 7; // 364 cells
     const emptyCellsAtStart = totalCells - 364;
@@ -113,7 +119,7 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
     }
   };
 
-  const getTooltipText = (day: any) => {
+  const getTooltipText = (day: DayData) => {
     // Format: "Mon Jan 02 2025"
     const dateStr = format(day.date, 'EEE MMM dd yyyy');
     
@@ -127,7 +133,7 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
     }
   };
 
-  const handleMouseEnter = (day: any, event: React.MouseEvent) => {
+  const handleMouseEnter = (day: DayData, event: React.MouseEvent) => {
     // Clear any existing timeout
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
@@ -176,7 +182,7 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
     };
   }, []);
 
-  const handleCellClick = (day: any) => {
+  const handleCellClick = (day: DayData) => {
     if (onCellClick && day.isWithinRange) {
       onCellClick(day.dateString, day.value, day.isCompleted);
     }
@@ -187,7 +193,6 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
     
     const months: Array<{ name: string; weekIndex: number; year: number }> = [];
     let currentMonth = -1;
-    let currentMonthStartWeek = 0;
     
     graphData.forEach((week, weekIndex) => {
       const firstValidDay = week.find(day => day !== null);
@@ -202,7 +207,6 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
         }
         
         currentMonth = month;
-        currentMonthStartWeek = weekIndex;
         months.push({
           name: format(firstValidDay.date, 'MMM'),
           weekIndex: weekIndex, // Will be updated to end week when next month starts
