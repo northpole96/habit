@@ -151,7 +151,6 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
       return 'bg-gray-200 dark:bg-gray-700';
     } else {
       // For number habits, calculate intensity based on value relative to target
-      const target = habit.target || 1;
       if (value === 0) return 'bg-gray-200 dark:bg-gray-700';
       
       return ''; // Will use inline style for colored cells

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useSettings } from '@/hooks/useSettings';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface SettingsDialogProps {
   children?: React.ReactNode;
@@ -62,6 +63,9 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
         </DialogHeader>
         
         <div className="space-y-6">
+          {/* Theme Setting */}
+          <ThemeToggle />
+          
           {/* Cell Size Setting */}
           <div className="space-y-4">
             <div className="space-y-2">

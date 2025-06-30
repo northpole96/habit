@@ -5,6 +5,7 @@ import { CreateHabitDialog } from '@/components/CreateHabitDialog';
 import { ReorderHabitsDialog } from '@/components/ReorderHabitsDialog';
 import { HabitCard } from '@/components/HabitCard';
 import { SettingsDialog } from '@/components/SettingsDialog';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 import { TrendingUp, Target, Calendar } from 'lucide-react';
 
 export default function HabitTracker() {
@@ -55,6 +56,7 @@ export default function HabitTracker() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <ThemeToggleButton />
               <SettingsDialog />
               <ReorderHabitsDialog habits={habits} onReorderHabits={reorderHabits} />
               <CreateHabitDialog onCreateHabit={addHabit} />
