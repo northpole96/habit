@@ -371,6 +371,10 @@ export const useHabits = () => {
     saveHabits(updatedHabits);
   };
 
+  const reorderHabits = (reorderedHabits: Habit[]) => {
+    saveHabits(reorderedHabits);
+  };
+
   return {
     habits,
     isLoading,
@@ -387,5 +391,6 @@ export const useHabits = () => {
     getTodayEntry,
     getTotalCount,
     addRandomEntries,
+    reorderHabits,
   };
 }; 

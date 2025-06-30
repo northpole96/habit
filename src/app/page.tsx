@@ -2,6 +2,7 @@
 
 import { useHabits } from '@/hooks/useHabits';
 import { CreateHabitDialog } from '@/components/CreateHabitDialog';
+import { ReorderHabitsDialog } from '@/components/ReorderHabitsDialog';
 import { HabitCard } from '@/components/HabitCard';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { TrendingUp, Target, Calendar } from 'lucide-react';
@@ -23,6 +24,7 @@ export default function HabitTracker() {
     getTodayEntry,
     getTotalCount,
     addRandomEntries,
+    reorderHabits,
   } = useHabits();
 
   if (isLoading) {
@@ -54,6 +56,7 @@ export default function HabitTracker() {
             </div>
             <div className="flex items-center gap-3">
               <SettingsDialog />
+              <ReorderHabitsDialog habits={habits} onReorderHabits={reorderHabits} />
               <CreateHabitDialog onCreateHabit={addHabit} />
             </div>
           </div>
