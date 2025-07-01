@@ -1,6 +1,7 @@
 'use client';
 
 import { useHabits } from '@/hooks/useHabits';
+import { useSettings } from '@/hooks/useSettings';
 import { CreateHabitDialog } from '@/components/CreateHabitDialog';
 import { ReorderHabitsDialog } from '@/components/ReorderHabitsDialog';
 import { HabitCard } from '@/components/HabitCard';
@@ -27,6 +28,8 @@ export default function HabitTracker() {
     addRandomEntries,
     reorderHabits,
   } = useHabits();
+  
+  const { settings } = useSettings();
 
   if (isLoading) {
     return (
@@ -66,7 +69,7 @@ export default function HabitTracker() {
       </div>
 
       {/* Stats */}
-      {totalHabits > 0 && (
+      {totalHabits > 0 && settings.showStats && (
         <div className="border-b bg-muted/20">
           <div className="container mx-auto px-4 py-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -129,7 +132,7 @@ export default function HabitTracker() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 mx-auto">
+          <div className="flex flex-col gap-6 mx-auto items-center">
             {habits.map((habit) => (
               <HabitCard
                 key={habit.id}

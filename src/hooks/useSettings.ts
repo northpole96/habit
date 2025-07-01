@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 interface Settings {
   cellSize: number;
   hoverDelay: number; // Delay in milliseconds for hover tooltip
+  showStats: boolean; // Show/hide the statistics section
 }
 
 const DEFAULT_SETTINGS: Settings = {
   cellSize: 24,
   hoverDelay: 0, // Default no delay
+  showStats: true, // Show stats section by default
 };
 
 const SETTINGS_KEY = 'habit-tracker-settings';

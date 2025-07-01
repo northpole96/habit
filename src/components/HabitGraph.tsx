@@ -282,7 +282,7 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
 
   return (
     <div className={`p-4 ${className}`}>
-      <div className="w-full outline-1">
+      <div className="w-full ">
         {/* Month labels */}
         <div 
           className="flex mb-6 text-xs text-gray-600 dark:text-gray-400 relative" 

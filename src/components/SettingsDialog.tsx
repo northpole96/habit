@@ -16,13 +16,15 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
   const { settings, updateSettings, resetSettings } = useSettings();
   const [localCellSize, setLocalCellSize] = useState(settings.cellSize);
   const [localHoverDelay, setLocalHoverDelay] = useState(settings.hoverDelay);
+  const [localShowStats, setLocalShowStats] = useState(settings.showStats);
   const [open, setOpen] = useState(false);
 
   // Update local state when settings change
   useEffect(() => {
     setLocalCellSize(settings.cellSize);
     setLocalHoverDelay(settings.hoverDelay);
-  }, [settings.cellSize, settings.hoverDelay]);
+    setLocalShowStats(settings.showStats);
+  }, [settings.cellSize, settings.hoverDelay, settings.showStats]);
 
   const handleCellSizeChange = (newSize: number) => {
     const clampedSize = Math.max(8, Math.min(48, newSize));
@@ -36,10 +38,17 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
     updateSettings({ hoverDelay: clampedDelay });
   };
 
+  const handleShowStatsToggle = () => {
+    const newValue = !localShowStats;
+    setLocalShowStats(newValue);
+    updateSettings({ showStats: newValue });
+  };
+
   const handleReset = () => {
     resetSettings();
     setLocalCellSize(24); // Reset to default
     setLocalHoverDelay(0); // Reset to default
+    setLocalShowStats(true); // Reset to default
   };
 
   const triggerButton = children || (
@@ -65,6 +74,26 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
         <div className="space-y-6">
           {/* Theme Setting */}
           <ThemeToggle />
+          
+          {/* Show Stats Setting */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Statistics Section
+            </Label>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Show overview stats (Total Habits, Completed Today, Total Streaks)
+              </div>
+              <Button
+                variant={localShowStats ? "default" : "outline"}
+                size="sm"
+                onClick={handleShowStatsToggle}
+                className="min-w-[60px]"
+              >
+                {localShowStats ? "ON" : "OFF"}
+              </Button>
+            </div>
+          </div>
           
           {/* Cell Size Setting */}
           <div className="space-y-4">

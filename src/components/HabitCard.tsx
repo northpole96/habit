@@ -208,7 +208,7 @@ export const HabitCard = ({
 
   // ===== COMPONENT RENDER =====
   return (
-    <Card className="relative overflow-hidden"> {/* Main card container with relative positioning for color indicator */}
+    <Card className="relative overflow-hidden w-fit"> {/* Main card container with relative positioning for color indicator */}
       
      
       
