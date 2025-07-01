@@ -27,7 +27,7 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
   }, [settings.cellSize, settings.hoverDelay, settings.showStats]);
 
   const handleCellSizeChange = (newSize: number) => {
-    const clampedSize = Math.max(8, Math.min(48, newSize));
+    const clampedSize = Math.max(1, Math.min(42, newSize));
     setLocalCellSize(clampedSize);
     updateSettings({ cellSize: clampedSize });
   };
@@ -105,8 +105,8 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleCellSizeChange(localCellSize - 2)}
-                  disabled={localCellSize <= 8}
+                  onClick={() => handleCellSizeChange(localCellSize - 1)}
+                  disabled={localCellSize <= 1}
                   className="h-8 w-8 p-0"
                 >
                   -
@@ -118,15 +118,15 @@ export const SettingsDialog = ({ children }: SettingsDialogProps) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleCellSizeChange(localCellSize + 2)}
-                  disabled={localCellSize >= 48}
+                  onClick={() => handleCellSizeChange(localCellSize + 1)}
+                  disabled={localCellSize >= 42}
                   className="h-8 w-8 p-0"
                 >
                   +
                 </Button>
               </div>
               <div className="text-xs text-muted-foreground">
-                Adjust the size of cells in your habit graphs (8-48 pixels)
+                Adjust the size of cells in your habit graphs (1-42 pixels)
               </div>
             </div>
 
