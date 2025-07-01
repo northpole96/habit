@@ -282,7 +282,7 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
 
   return (
     <div className={`p-4 ${className}`}>
-      <div className="w-full">
+      <div className="w-full outline-1">
         {/* Month labels */}
         <div 
           className="flex mb-6 text-xs text-gray-600 dark:text-gray-400 relative" 
@@ -393,46 +393,8 @@ export const HabitGraph = ({ habit, onCellClick, className, cellSize = 24 }: Hab
           </div>
         </div>
         
-        {/* Legend */}
-        <div className="flex items-center justify-between mt-4 text-xs text-gray-600 dark:text-gray-400">
-          <span>Less</span>
-          <div className="flex" style={{ gap: `${gap}px` }}>
-            {(() => {
-              const rgb = hexToRgb(habit.color);
-              const opacities = [0, 0.4, 0.6, 0.8, 0.9, 1.0];
-              
-              return opacities.map((opacity, index) => (
-                <div 
-                  key={index}
-                  className={index === 0 ? "rounded-sm bg-gray-200 dark:bg-gray-700" : "rounded-sm"}
-                  style={{ 
-                    width: `${cellSize}px`, 
-                    height: `${cellSize}px`,
-                    backgroundColor: index === 0 
-                      ? undefined // Use Tailwind class for gray
-                      : `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`
-                  }}
-                ></div>
-              ));
-            })()}
-          </div>
-          <span>More</span>
-        </div>
-        
-        {/* Additional info for number habits */}
-        {habit.type === 'number' && (
-          <div className="mt-2 text-xs text-muted-foreground text-center">
-            Target: {habit.target}{habit.unit ? ` ${habit.unit}` : ''} per day
-            {onCellClick && <div className="mt-1">Click on any day to edit</div>}
-          </div>
-        )}
-        
-        {/* Click instruction for checkbox habits */}
-        {habit.type === 'checkbox' && onCellClick && (
-          <div className="mt-2 text-xs text-muted-foreground text-center">
-            Click on any day to mark complete/incomplete
-          </div>
-        )}
+               
+       
       </div>
 
       {/* Custom Tooltip */}
