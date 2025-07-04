@@ -24,21 +24,17 @@ import { useState } from 'react';
 
 // Lucide React icons for visual elements throughout the card
 import { 
-  Flame,        // Used for streak indicators (fire emoji represents "hot streak")
   Trash2,       // Delete button icon (trash can)
-  Target,       // Target/goal indicator for statistics
   Hash,         // Number sign for numeric habits
   CheckSquare,  // Checkbox icon for boolean habits
   BarChart3,    // Chart icon for insights/statistics section
   Calendar,     // Calendar icon for today's progress button
-  TestTube,      // Test tube icon for adding random test data (development feature)
-  FlaskConical
+  FlaskConical  // Flask icon for adding random test data (development feature)
 } from 'lucide-react';
 
 // Shadcn/ui components for consistent styling and accessibility
 import { Button } from '@/components/ui/button';              // Interactive buttons with variants
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Card layout structure
-import { Badge } from '@/components/ui/badge';                // Small labeled elements for completion rates
 
 // Custom types and components specific to this habit tracking application
 import { Habit } from '@/types/habit';                        // TypeScript interface defining habit structure
@@ -178,33 +174,7 @@ export const HabitCard = ({
 
   // ===== CALCULATED VALUES =====
   
-  /**
-   * Calculate the overall completion rate as a percentage
-   * This represents how consistently the user has been completing this habit
-   * since its creation date.
-   * 
-   * Formula: (total completed days) / (days since habit creation) * 100
-   */
-  const completionRate = totalCount > 0 
-    ? Math.round((totalCount / Math.max(1, Math.ceil((new Date().getTime() - new Date(habit.createdAt).getTime()) / (1000 * 60 * 60 * 24)))) * 100)
-    : 0;
-
-  /**
-   * Calculate progress percentage for today (used in progress bars)
-   * 
-   * For number habits: percentage of target achieved (capped at 100%)
-   * For checkbox habits: 100% if completed, 0% if not completed
-   * 
-   * @returns Percentage value between 0 and 100
-   */
-  const getProgressPercentage = () => {
-    if (habit.type === 'number' && habit.target) {
-      // For numeric habits, calculate what percentage of the target has been achieved
-      return Math.min((todayValue / habit.target) * 100, 100);
-    }
-    // For checkbox habits, it's binary: 100% if done, 0% if not done
-    return isCompletedToday ? 100 : 0;
-  };
+  // (No calculated values are currently used in the component render)
 
   // ===== COMPONENT RENDER =====
   return (
